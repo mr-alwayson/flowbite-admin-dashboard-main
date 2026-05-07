@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
+import { mockApi } from '../services/api';
 import { useSearchParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { AlertTriangle, Plus, Send, Zap, ClipboardList, PackageSearch } from 'lucide-react';
@@ -32,16 +33,18 @@ export default function MRP() {
     fetchData();
   }, []);
 
-  const fetchData = () => {
-    fetch('http://localhost:5000/materials')
-      .then(r => r.ok ? r.json() : [])
-      .then(data => Array.isArray(data) ? setMaterials(data) : setMaterials([]))
-      .catch(() => setMaterials([]));
-      
-    fetch('http://localhost:5000/planned_orders')
-      .then(r => r.ok ? r.json() : [])
-      .then(data => Array.isArray(data) ? setPlannedOrders(data) : setPlannedOrders([]))
-      .catch(() => setPlannedOrders([]));
+  const fetchData = async () => {
+    try {
+      const [mats, orders] = await Promise.all([
+        mockApi.getMaterials(),
+        mockApi.getPlannedOrders()
+      ]);
+      setMaterials(mats);
+      setPlannedOrders(orders);
+    } catch (err) {
+      setMaterials([]);
+      setPlannedOrders([]);
+    }
   };
 
   const criticalMaterials = materials.filter(m => m.stock < m.minLevel);
@@ -94,7 +97,7 @@ export default function MRP() {
       justification,
       comment: ''
     };
-    await fetch('http://localhost:5000/requests', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(newRequest) });
+    await mockApi.createRequest(newRequest);
     setShowForm(false);
     setReqQty(''); setJustification(''); setSelectedMatId('');
     setSuccessMsg('Material request submitted successfully!');
@@ -111,9 +114,7 @@ export default function MRP() {
       createdAt: new Date().toISOString(),
       reason: 'Auto-generated: stock below minimum level'
     }));
-    await Promise.all(newOrders.map(o =>
-      fetch('http://localhost:5000/planned_orders', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(o) })
-    ));
+    await Promise.all(newOrders.map(o => mockApi.createPlannedOrder(o)));
     fetchData();
     setSuccessMsg(`${newOrders.length} planned order(s) generated!`);
     setTimeout(() => setSuccessMsg(''), 3000);

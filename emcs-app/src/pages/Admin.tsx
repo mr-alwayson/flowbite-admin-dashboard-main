@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
+import { mockApi } from '../services/api';
 import { useSearchParams } from 'react-router-dom';
 import { Users, Shield, ScrollText, Plus, Pencil, Trash2, X, Check, Search } from 'lucide-react';
 
@@ -42,8 +43,8 @@ export default function Admin() {
   const rowsPerPage = 10;
 
   useEffect(() => {
-    fetch('http://localhost:5000/users').then(r => r.json()).then(setUsers);
-    fetch('http://localhost:5000/logs').then(r => r.json()).then(setLogs);
+    mockApi.getUsers().then(setUsers);
+    mockApi.getLogs().then(setLogs);
   }, []);
 
   const getUserName = (id: string) => users.find(u => u.id === id)?.name ?? id;
@@ -116,18 +117,22 @@ export default function Admin() {
 
   const handleSave = async () => {
     if (editUser) {
-      await fetch(`http://localhost:5000/users/${editUser.id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(form) });
+      await mockApi.updateUser(editUser.id, form);
     } else {
       const newUser = { ...form, id: Date.now().toString(), password: 'password123' };
-      await fetch('http://localhost:5000/users', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(newUser) });
+      const users = await mockApi.getUsers();
+      users.push(newUser);
+      localStorage.setItem('emcs_db', JSON.stringify({ ...JSON.parse(localStorage.getItem('emcs_db') || '{}'), users }));
     }
-    fetch('http://localhost:5000/users').then(r => r.json()).then(setUsers);
+    mockApi.getUsers().then(setUsers);
     setShowForm(false);
   };
 
   const handleDelete = async (id: string) => {
     if (!confirm('Delete this user?')) return;
-    await fetch(`http://localhost:5000/users/${id}`, { method: 'DELETE' });
+    const db = JSON.parse(localStorage.getItem('emcs_db') || '{}');
+    db.users = db.users.filter((u: any) => u.id !== id);
+    localStorage.setItem('emcs_db', JSON.stringify(db));
     setUsers(u => u.filter(x => x.id !== id));
   };
 

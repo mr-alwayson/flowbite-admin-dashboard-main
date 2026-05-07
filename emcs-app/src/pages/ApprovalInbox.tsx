@@ -1,7 +1,9 @@
 import { useState, useEffect, useMemo } from 'react';
+import { mockApi } from '../services/api';
 import { useSearchParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { Check, X, Clock, FileText, ChevronRight, Search } from 'lucide-react';
+
 
 const APPROVAL_LEVELS = ['User', 'Supervisor', 'Manager', 'Dept Head'];
 
@@ -54,14 +56,14 @@ export default function ApprovalInbox() {
   useEffect(() => { fetchData(); }, []);
 
   const fetchData = async () => {
-    const [reqRes, matRes, userRes] = await Promise.all([
-      fetch('http://localhost:5000/requests'),
-      fetch('http://localhost:5000/materials'),
-      fetch('http://localhost:5000/users')
+    const [reqs, mats, usrs] = await Promise.all([
+      mockApi.getRequests(),
+      mockApi.getMaterials(),
+      mockApi.getUsers()
     ]);
-    setRequests(await reqRes.json());
-    setMaterials(await matRes.json());
-    setUsers(await userRes.json());
+    setRequests(reqs);
+    setMaterials(mats);
+    setUsers(usrs);
   };
 
   const handleApprove = async (req: any) => {
@@ -70,20 +72,14 @@ export default function ApprovalInbox() {
     else if (user?.role === 'Manager') newStatus = 'Approved_Manager';
     else if (user?.role === 'Dept Head') newStatus = 'Approved_DeptHead';
     
-    await fetch(`http://localhost:5000/requests/${req.id}`, {
-      method: 'PATCH', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ status: newStatus, comment: comment || 'Approved.' })
-    });
+    await mockApi.updateRequest(req.id, { status: newStatus, comment: comment || 'Approved.' });
     setSelectedReq(null); setComment('');
     fetchData();
   };
 
   const handleReject = async (req: any) => {
     if (!rejectComment.trim()) return alert('Rejection comment is required.');
-    await fetch(`http://localhost:5000/requests/${req.id}`, {
-      method: 'PATCH', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ status: 'Rejected', comment: rejectComment })
-    });
+    await mockApi.updateRequest(req.id, { status: 'Rejected', comment: rejectComment });
     setSelectedReq(null); setRejectComment(''); setShowRejectForm(false);
     fetchData();
   };

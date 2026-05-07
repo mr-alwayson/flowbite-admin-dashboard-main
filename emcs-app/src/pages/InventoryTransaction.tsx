@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { mockApi } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { Package, Send, Plus, Trash2, ArrowRightLeft, FilePlus, FileMinus, Settings2 } from 'lucide-react';
 
@@ -21,10 +22,7 @@ export default function InventoryTransaction() {
   const [successMsg, setSuccessMsg] = useState('');
 
   useEffect(() => {
-    fetch('http://localhost:5000/materials')
-      .then(res => res.json())
-      .then(data => setMaterials(data))
-      .catch(err => console.error(err));
+    mockApi.getMaterials().then(setMaterials);
   }, []);
 
   const addItem = () => setItems([...items, { materialId: '', qty: 1 }]);
@@ -76,11 +74,7 @@ export default function InventoryTransaction() {
     };
 
     try {
-      await fetch('http://localhost:5000/requests', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(newRequest)
-      });
+      await mockApi.createRequest(newRequest);
       
       setSuccessMsg(`Transaction ${newRequest.id} submitted for approval!`);
       setItems([{ materialId: '', qty: 1 }]);
@@ -95,6 +89,17 @@ export default function InventoryTransaction() {
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
+      {/* On Progress Banner */}
+      <div className="bg-amber-50 border border-amber-200 dark:bg-amber-900/20 dark:border-amber-800 p-4 rounded-xl flex items-center gap-3">
+        <div className="p-2 bg-amber-100 dark:bg-amber-800 rounded-lg text-amber-600 dark:text-amber-400">
+          <Settings2 size={20} className="animate-spin-slow" />
+        </div>
+        <div>
+          <h3 className="text-sm font-bold text-amber-800 dark:text-amber-400">Module On Progress</h3>
+          <p className="text-xs text-amber-600 dark:text-amber-500">This inventory module is currently under development. Data entry is available for demonstration purposes only.</p>
+        </div>
+      </div>
+
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>

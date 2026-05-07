@@ -1,4 +1,5 @@
 import { createContext, useContext, useState } from 'react';
+import { mockApi } from '../services/api';
 import type { ReactNode } from 'react';
 
 export type UserRole = 'User' | 'Supervisor' | 'Manager' | 'Dept Head' | 'Admin';
@@ -27,12 +28,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const login = async (email: string) => {
     try {
-      // Mock API call to check user
-      const response = await fetch(`http://localhost:5000/users?email=${email}`);
-      const data = await response.json();
-      if (data && data.length > 0) {
-        const loggedInUser = data[0];
-        setUser(loggedInUser);
+      const loggedInUser = await mockApi.login(email);
+      if (loggedInUser) {
+        setUser(loggedInUser as any);
         localStorage.setItem('emcs_user', JSON.stringify(loggedInUser));
         return true;
       }

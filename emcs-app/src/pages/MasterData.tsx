@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
+import { mockApi } from '../services/api';
 import { Search, Download, FilterX, SlidersHorizontal, X, Box, Info } from 'lucide-react';
 
 export default function MasterData() {
@@ -20,10 +21,7 @@ export default function MasterData() {
   const rowsPerPage = 10;
 
   useEffect(() => {
-    fetch('http://localhost:5000/materials')
-      .then(res => res.json())
-      .then(data => setMaterials(data))
-      .catch(err => console.error(err));
+    mockApi.getMaterials().then(setMaterials);
   }, []);
 
   // Dynamic dropdown values from master data

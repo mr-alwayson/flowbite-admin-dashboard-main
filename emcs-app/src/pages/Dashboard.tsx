@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { mockApi } from '../services/api';
 import { PackageSearch, AlertTriangle, CheckCircle, Clock } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
@@ -13,7 +14,7 @@ function getStatusBadge(status: string) {
 }
 
 export default function Dashboard() {
-  const [stats, setStats] = useState({ totalMaterials: 0, criticalStock: 0, pendingApprovals: 0, fullyApproved: 0 });
+  const [stats, setStats] = useState({ totalMaterials: 0, lowStock: 0, pendingApprovals: 0, fullyApproved: 0 });
   const [chartData, setChartData] = useState<any[]>([]);
   const [recentRequests, setRecentRequests] = useState<any[]>([]);
   const [materials, setMaterials] = useState<any[]>([]);
@@ -21,21 +22,18 @@ export default function Dashboard() {
 
   useEffect(() => {
     const fetchData = async () => {
-      const [matRes, reqRes, userRes] = await Promise.all([
-        fetch('http://localhost:5000/materials'),
-        fetch('http://localhost:5000/requests'),
-        fetch('http://localhost:5000/users')
+      const [mats, reqs, usrs] = await Promise.all([
+        mockApi.getMaterials(),
+        mockApi.getRequests(),
+        mockApi.getUsers()
       ]);
-      const mats = await matRes.json();
-      const reqs = await reqRes.json();
-      const usrs = await userRes.json();
       setMaterials(mats);
       setUsers(usrs);
 
-      const critical = mats.filter((m: any) => m.stock < m.minLevel).length;
+      const lowStockCount = mats.filter((m: any) => m.stock < m.minLevel).length;
       const pending = reqs.filter((r: any) => r.status === 'Pending' || r.status === 'Approved_Supervisor').length;
       const approved = reqs.filter((r: any) => r.status === 'Approved_DeptHead').length;
-      setStats({ totalMaterials: mats.length, criticalStock: critical, pendingApprovals: pending, fullyApproved: approved });
+      setStats({ totalMaterials: mats.length, lowStock: lowStockCount, pendingApprovals: pending, fullyApproved: approved });
 
       const sorted = [...mats].sort((a, b) => (a.stock / a.minLevel) - (b.stock / b.minLevel)).slice(0, 5);
       setChartData(sorted.map((m: any) => ({ name: m.description.split(' ').slice(0, 2).join(' '), Stock: m.stock, 'Min Level': m.minLevel, 'Max Level': m.maxLevel })));
@@ -51,7 +49,7 @@ export default function Dashboard() {
 
   const statCards = [
     { label: 'Total Materials', value: stats.totalMaterials, icon: <PackageSearch size={22} />, color: 'blue' },
-    { label: 'Critical Stock', value: stats.criticalStock, icon: <AlertTriangle size={22} />, color: 'red' },
+    { label: 'Low Stock', value: stats.lowStock, icon: <AlertTriangle size={22} />, color: 'red' },
     { label: 'Pending Approvals', value: stats.pendingApprovals, icon: <Clock size={22} />, color: 'amber' },
     { label: 'Fully Approved', value: stats.fullyApproved, icon: <CheckCircle size={22} />, color: 'emerald' },
   ];
@@ -82,7 +80,7 @@ export default function Dashboard() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-5">
           <h3 className="font-bold text-gray-900 dark:text-white mb-1 flex items-center gap-2">
-            <AlertTriangle className="text-amber-500" size={18} />Critical Stock Comparison
+            <AlertTriangle className="text-amber-500" size={18} />Low Stock Comparison
           </h3>
           <p className="text-xs text-gray-400 mb-5">Top 5 materials closest to depletion</p>
           <div className="h-64">
@@ -103,20 +101,10 @@ export default function Dashboard() {
 
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-5 space-y-4">
           <h3 className="font-bold text-gray-900 dark:text-white">System Status</h3>
-          <div className="p-3.5 rounded-lg bg-blue-50 border border-blue-100 dark:bg-blue-900/20 dark:border-blue-800">
-            <h4 className="text-sm font-semibold text-blue-800 dark:text-blue-300">Approval Pipeline</h4>
-            <p className="text-xs text-blue-600 dark:text-blue-400 mt-1">{stats.pendingApprovals} request(s) are in the multi-level approval workflow pipeline.</p>
-          </div>
+
           <div className="p-3.5 rounded-lg bg-red-50 border border-red-100 dark:bg-red-900/20 dark:border-red-800">
-            <h4 className="text-sm font-semibold text-red-800 dark:text-red-300">Safety Stock Alert</h4>
-            <p className="text-xs text-red-600 dark:text-red-400 mt-1">{stats.criticalStock} material(s) are below minimum safety stock level. Check MRP module.</p>
-          </div>
-          <div className="p-3.5 rounded-lg bg-gray-50 border border-gray-100 dark:bg-gray-700/30 dark:border-gray-600">
-            <h4 className="text-sm font-semibold text-gray-800 dark:text-gray-200">SAP Integration</h4>
-            <p className="text-xs text-gray-500 mt-1 flex items-center gap-1.5">
-              <span className="w-1.5 h-1.5 rounded-full bg-green-500 inline-block"></span>
-              SAP Business One Service Layer — Connected at {new Date().toLocaleTimeString()}
-            </p>
+            <h4 className="text-sm font-semibold text-red-800 dark:text-blue-300">Safety Stock Alert</h4>
+            <p className="text-xs text-red-600 dark:text-red-400 mt-1">{stats.lowStock} material(s) are below minimum safety stock level. Check MRP module.</p>
           </div>
         </div>
       </div>

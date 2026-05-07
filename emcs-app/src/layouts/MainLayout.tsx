@@ -205,10 +205,7 @@ export default function MainLayout() {
               className="p-2 text-gray-500 hover:bg-gray-100 rounded-lg dark:text-gray-400 dark:hover:bg-gray-700 transition-colors">
               {isDark ? <Sun size={18} /> : <Moon size={18} />}
             </button>
-            <div className="flex items-center gap-2 text-xs text-gray-500 bg-gray-100 dark:bg-gray-700 px-3 py-1.5 rounded-full transition-colors">
-              <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse"></span>
-              SAP Sync: Live
-            </div>
+
           </div>
         </header>
         <div className="flex-1 overflow-auto p-6">
